@@ -4,7 +4,8 @@ const cors = require('cors');
 
 const app = express();
 
-// --- CONFIGURACIÓN DE CORS (Para que Vercel pueda hablar con Railway) ---
+// --- CONFIGURACIÓN DE SEGURIDAD (CORS) ---
+// Esto permite que tu web en Vercel hable con este servidor en Railway
 app.use(cors({
     origin: '*', 
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -13,8 +14,8 @@ app.use(cors({
 
 app.use(express.json());
 
-// --- CONEXIÓN DIRECTA A LA BASE DE DATOS ---
-// REEMPLAZA 'TU_PASSWORD_AQUÍ' con la contraseña que aparece en tu imagen de Railway
+// --- CONEXIÓN DIRECTA A LA BASE DE DATOS (CABOOSE) ---
+// REEMPLAZA 'TU_PASSWORD' con la que aparece en tu link de Railway
 const db = mysql.createConnection({
     host: 'caboose.proxy.rlwy.net',
     user: 'root',
@@ -25,15 +26,15 @@ const db = mysql.createConnection({
 
 db.connect((err) => {
     if (err) {
-        console.error('❌ Error de conexión:', err.message);
+        console.error('❌ Error conectando a la base de datos:', err.message);
         return;
     }
-    console.log('✅ ¡CONECTADO EXITOSAMENTE A LA BD CABOOSE!');
+    console.log('✅ ¡CONECTADO EXITOSAMENTE A LA BD CABOOSE EN EL PUERTO 16352!');
 });
 
-// --- RUTAS ---
+// --- RUTAS DEL SISTEMA ---
 
-// Login (Arregla el error de credenciales incorrectas)
+// Login: Para que admin@dulcemundo.com pueda entrar
 app.post('/api/login', (req, res) => {
     const { email, password } = req.body;
     const sql = "SELECT id, nombre, rol FROM usuarios WHERE email = ? AND password = ?";
@@ -47,17 +48,17 @@ app.post('/api/login', (req, res) => {
     });
 });
 
-// Registro (Para que "Juan" por fin pueda crearse)
+// Registro: Para que clientes como "Juan" puedan crearse
 app.post('/api/registro', (req, res) => {
     const { nombre, email, password } = req.body;
     const sql = "INSERT INTO usuarios (nombre, email, password, rol) VALUES (?, ?, ?, 'cliente')";
     db.query(sql, [nombre, email, password], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true, message: "Usuario creado 🍭" });
+        res.json({ success: true, message: "Usuario creado exitosamente 🍭" });
     });
 });
 
-// Catálogo
+// Catálogo: Para que los dulces aparezcan en pantalla
 app.get('/api/productos', (req, res) => {
     db.query('SELECT * FROM productos', (err, result) => {
         if (err) return res.status(500).send(err);
@@ -65,7 +66,8 @@ app.get('/api/productos', (req, res) => {
     });
 });
 
+// Iniciar servidor
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-    console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+    console.log(`🚀 Servidor de Dulce Mundo corriendo en puerto ${PORT}`);
 });
