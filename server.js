@@ -54,6 +54,32 @@ app.get('/api/productos', (req, res) => {
   });
 });
 
+// Ruta para Registro de Clientes
+app.post('/api/registro', (req, res) => {
+    const { nombre, email, password } = req.body;
+    const sql = "INSERT INTO usuarios (nombre, email, password, rol) VALUES (?, ?, ?, 'cliente')";
+    
+    db.query(sql, [nombre, email, password], (err, result) => {
+        if (err) return res.status(500).json({ error: "El correo ya existe o hubo un error." });
+        res.json({ success: true, message: "¡Ya eres parte de Dulce Mundo! 🍬" });
+    });
+});
+
+// Ruta para Login (Separando Admin de Cliente)
+app.post('/api/login', (req, res) => {
+    const { email, password } = req.body;
+    const sql = "SELECT id, nombre, rol FROM usuarios WHERE email = ? AND password = ?";
+    
+    db.query(sql, [email, password], (err, result) => {
+        if (err) return res.status(500).json(err);
+        if (result.length > 0) {
+            res.json({ success: true, user: result[0] });
+        } else {
+            res.status(401).json({ success: false, message: "Correo o contraseña incorrectos." });
+        }
+    });
+});
+
 // --- INICIAR SERVIDOR :) ---
 app.listen(PORT, () => {
   console.log(`📡 Servidor escuchando en http://localhost:${PORT}`);
