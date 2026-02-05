@@ -1,41 +1,63 @@
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
-require('dotenv').config();
 
 const app = express();
 
-// --- 1. CONFIGURACIÓN DE SEGURIDAD (CORS) ---
-// Esto arregla el error de "blocked by CORS policy" que viste en la consola
+// --- CONFIGURACIÓN DE CORS (Para que Vercel pueda hablar con Railway) ---
 app.use(cors({
-    origin: '*', // En producción, puedes cambiar '*' por tu URL de Vercel
+    origin: '*', 
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true
 }));
 
 app.use(express.json());
 
-// --- 2. CONEXIÓN A LA BASE DE DATOS ---
-// Usamos las variables que configuraste en Railway
+// --- CONEXIÓN DIRECTA A LA BASE DE DATOS ---
+// REEMPLAZA 'TU_PASSWORD_AQUÍ' con la contraseña que aparece en tu imagen de Railway
 const db = mysql.createConnection({
-    host: process.env.DB_HOST || 'caboose.proxy.rlwy.net',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME || 'railway',
-    port: process.env.DB_PORT || 16352
+    host: 'caboose.proxy.rlwy.net',
+    user: 'root',
+    password: 'PnFGuaOByRrEdjcojTNFgJzOFpFmaMHe', 
+    database: 'railway',
+    port: 16352
 });
 
 db.connect((err) => {
     if (err) {
-        console.error('Error conectando a la BD de Railway:', err);
+        console.error('❌ Error de conexión:', err.message);
         return;
     }
-    console.log('✅ Conexión exitosa a la base de datos de Dulce Mundo');
+    console.log('✅ ¡CONECTADO EXITOSAMENTE A LA BD CABOOSE!');
 });
 
-// --- 3. RUTAS DEL SISTEMA ---
+// --- RUTAS ---
 
-// Obtener productos para el Catálogo
+// Login (Arregla el error de credenciales incorrectas)
+app.post('/api/login', (req, res) => {
+    const { email, password } = req.body;
+    const sql = "SELECT id, nombre, rol FROM usuarios WHERE email = ? AND password = ?";
+    db.query(sql, [email, password], (err, result) => {
+        if (err) return res.status(500).json(err);
+        if (result.length > 0) {
+            res.json({ success: true, user: result[0] });
+        } else {
+            res.status(401).json({ success: false, message: "Credenciales incorrectas" });
+        }
+    });
+});
+
+// Registro (Para que "Juan" por fin pueda crearse)
+app.post('/api/registro', (req, res) => {
+    const { nombre, email, password } = req.body;
+    const sql = "INSERT INTO usuarios (nombre, email, password, rol) VALUES (?, ?, ?, 'cliente')";
+    db.query(sql, [nombre, email, password], (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, message: "Usuario creado 🍭" });
+    });
+});
+
+// Catálogo
 app.get('/api/productos', (req, res) => {
     db.query('SELECT * FROM productos', (err, result) => {
         if (err) return res.status(500).send(err);
@@ -43,39 +65,7 @@ app.get('/api/productos', (req, res) => {
     });
 });
 
-// Registro de Clientes
-app.post('/api/registro', (req, res) => {
-    const { nombre, email, password } = req.body;
-    const sql = "INSERT INTO usuarios (nombre, email, password, rol) VALUES (?, ?, ?, 'cliente')";
-    
-    db.query(sql, [nombre, email, password], (err, result) => {
-        if (err) {
-            if (err.code === 'ER_DUP_ENTRY') {
-                return res.status(400).json({ message: "Este correo ya está registrado 🍭" });
-            }
-            return res.status(500).json(err);
-        }
-        res.json({ success: true, message: "¡Usuario creado con éxito!" });
-    });
-});
-
-// Login de Usuarios (Admin y Clientes)
-app.post('/api/login', (req, res) => {
-    const { email, password } = req.body;
-    const sql = "SELECT id, nombre, rol FROM usuarios WHERE email = ? AND password = ?";
-    
-    db.query(sql, [email, password], (err, result) => {
-        if (err) return res.status(500).json(err);
-        if (result.length > 0) {
-            res.json({ success: true, user: result[0] });
-        } else {
-            res.status(401).json({ success: false, message: "Credenciales incorrectas ❌" });
-        }
-    });
-});
-
-// --- 4. ENCENDER SERVIDOR ---
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-    console.log(`🚀 Servidor de Dulce Mundo corriendo en puerto ${PORT}`);
+    console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
 });
