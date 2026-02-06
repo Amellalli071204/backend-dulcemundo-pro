@@ -7,10 +7,14 @@ const app = express();
 
 // --- CONFIGURACIÓN DE CORS ---
 app.use(cors({
-    origin: '*', 
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    origin: '*', // Permite peticiones desde Vercel
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Agregamos OPTIONS
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'], // Cabeceras que Axios necesita
+    credentials: true
 }));
+
+// Importante: Responde a las peticiones 'OPTIONS' (preflight) inmediatamente
+app.options('*', cors());
 
 app.use(express.json());
 
