@@ -70,3 +70,11 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
     console.log(`🚀 Motor de Dulce Mundo encendido en el puerto ${PORT}`);
 });
+db.connect((err) => {
+    if (err) {
+        // Esto aparecerá en los logs de Railway y nos dirá el error REAL
+        console.error('❌ ERROR REAL DE BD:', err.code, err.message);
+        return;
+    }
+    console.log('✅ CONEXIÓN EXITOSA A LA BASE DE DATOS');
+});
