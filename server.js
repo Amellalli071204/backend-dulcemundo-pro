@@ -60,4 +60,4 @@ app.get('/api/productos', (req, res) => {
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
     console.log(`🚀 Motor de Dulce Mundo encendido en el puerto ${PORT}`);
-});
+}); 
