@@ -14,7 +14,7 @@ app.use(cors({
 }));
 
 // Importante: Responde a las peticiones 'OPTIONS' (preflight) inmediatamente
-app.options('*', cors());
+app.options('(.*)', cors());
 
 app.use(express.json());
 
