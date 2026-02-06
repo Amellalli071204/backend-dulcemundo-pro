@@ -5,19 +5,14 @@ require('dotenv').config();
 
 const app = express();
 
-// --- 1. CONFIGURACIÓN DE CORS ---
-// La librería cors ya maneja las peticiones OPTIONS automáticamente.
-// No necesitamos agregar app.options('*') manualmente.
-app.use(cors({
-    origin: '*', 
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-    credentials: true
-}));
+// --- 1. CONFIGURACIÓN DE CORS SIMPLIFICADA ---
+// Al dejarlo así, la librería acepta automáticamente las peticiones de Vercel
+// y maneja las opciones 'preflight' sin crashear el servidor
+app.use(cors()); 
 
 app.use(express.json());
 
-// --- 2. CONEXIÓN A LA BASE DE DATOS (Caboose) ---
+// --- 2. CONEXIÓN A LA BASE DE DATOS (Variables de Railway) ---
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -31,13 +26,14 @@ db.connect((err) => {
         console.error('❌ Error de conexión:', err.message);
         return;
     }
-    console.log('✅ Conexión establecida con la base de datos de Dulce Mundo');
+    console.log('✅ CONEXIÓN EXITOSA: El motor de Dulce Mundo está listo');
 });
 
 // --- 3. RUTAS (ENDPOINTS) ---
 
 app.post('/api/login', (req, res) => {
     const { email, password } = req.body;
+    // Buscamos en la tabla 'usuarios' que ya tienes lista
     const sql = "SELECT id, nombre, rol FROM usuarios WHERE email = ? AND password = ?";
     db.query(sql, [email, password], (err, result) => {
         if (err) return res.status(500).json(err);
@@ -54,27 +50,17 @@ app.post('/api/registro', (req, res) => {
     const sql = "INSERT INTO usuarios (nombre, email, password, rol) VALUES (?, ?, ?, 'cliente')";
     db.query(sql, [nombre, email, password], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true, message: "Usuario creado exitosamente 🍭" });
+        res.json({ success: true, message: "Usuario creado 🍭" });
     });
 });
 
 app.get('/api/productos', (req, res) => {
+    // Traemos los dulces que ya insertaste en DBeaver
     db.query('SELECT * FROM productos', (err, result) => {
         if (err) return res.status(500).send(err);
         res.json(result);
     });
 });
 
-// --- 4. ENCENDER SERVIDOR ---
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-    console.log(`🚀 Motor de Dulce Mundo encendido en el puerto ${PORT}`);
-});
-db.connect((err) => {
-    if (err) {
-        // Esto aparecerá en los logs de Railway y nos dirá el error REAL
-        console.error('❌ ERROR REAL DE BD:', err.code, err.message);
-        return;
-    }
-    console.log('✅ CONEXIÓN EXITOSA A LA BASE DE DATOS');
-});
+app.listen(PORT, () => console.log(`🚀 Servidor corriendo en puerto ${PORT}`));
