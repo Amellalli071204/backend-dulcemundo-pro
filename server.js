@@ -5,8 +5,9 @@ require('dotenv').config();
 
 const app = express();
 
-// --- CONFIGURACIÓN DE CORS PROFESIONAL ---
-// Esto permite que Vercel hable con Railway sin bloqueos
+// --- 1. CONFIGURACIÓN DE CORS ---
+// La librería cors ya maneja las peticiones OPTIONS automáticamente.
+// No necesitamos agregar app.options('*') manualmente.
 app.use(cors({
     origin: '*', 
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -14,17 +15,9 @@ app.use(cors({
     credentials: true
 }));
 
-// SOLUCIÓN AL CRASH: Manejo de peticiones preflight compatible
-app.options('*', (req, res) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
-    res.sendStatus(200);
-});
-
 app.use(express.json());
 
-// --- CONEXIÓN A LA BASE DE DATOS (Variables de Railway) ---
+// --- 2. CONEXIÓN A LA BASE DE DATOS (Caboose) ---
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -38,10 +31,10 @@ db.connect((err) => {
         console.error('❌ Error de conexión:', err.message);
         return;
     }
-    console.log('✅ Conexión segura establecida con la base de datos Caboose');
+    console.log('✅ Conexión establecida con la base de datos de Dulce Mundo');
 });
 
-// --- RUTAS (ENDPOINTS) ---
+// --- 3. RUTAS (ENDPOINTS) ---
 
 app.post('/api/login', (req, res) => {
     const { email, password } = req.body;
@@ -61,7 +54,7 @@ app.post('/api/registro', (req, res) => {
     const sql = "INSERT INTO usuarios (nombre, email, password, rol) VALUES (?, ?, ?, 'cliente')";
     db.query(sql, [nombre, email, password], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true, message: "Usuario creado 🍭" });
+        res.json({ success: true, message: "Usuario creado exitosamente 🍭" });
     });
 });
 
@@ -72,5 +65,8 @@ app.get('/api/productos', (req, res) => {
     });
 });
 
+// --- 4. ENCENDER SERVIDOR ---
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`🚀 Servidor en puerto ${PORT}`));
+app.listen(PORT, () => {
+    console.log(`🚀 Motor de Dulce Mundo encendido en el puerto ${PORT}`);
+});
