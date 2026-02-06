@@ -5,8 +5,8 @@ require('dotenv').config();
 
 const app = express();
 
-// --- CONFIGURACIÓN DE CORS TOTAL (PARA ARREGLAR TU VIDEO) ---
-// Esto permite que el navegador pase el "control check" que viste en el video
+// --- CONFIGURACIÓN DE CORS DEFINITIVA ---
+// Esto permite que Vercel hable con Railway sin que el navegador los bloquee
 app.use(cors({
     origin: '*', 
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -14,9 +14,12 @@ app.use(cors({
     credentials: true
 }));
 
+// Responder a peticiones preflight (el error rojo que ves en consola)
+app.options('*', cors());
+
 app.use(express.json());
 
-// --- CONEXIÓN A LA BASE DE DATOS (Usando tus variables de Railway) ---
+// --- CONEXIÓN A LA BASE DE DATOS (CABOOSE) ---
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -30,10 +33,17 @@ db.connect((err) => {
         console.error('❌ Error de conexión:', err.message);
         return;
     }
-    console.log('✅ CONEXIÓN EXITOSA A CABOOSE');
+    console.log('✅ CONEXIÓN EXITOSA A RAILWAY');
 });
 
-// --- TUS ENDPOINTS (Verifica que tu tabla se llame 'usuarios') ---
+// --- TUS RUTAS (Verificadas con tus tablas en DBeaver) ---
+app.get('/api/productos', (req, res) => {
+    db.query('SELECT * FROM productos', (err, result) => {
+        if (err) return res.status(500).json(err);
+        res.json(result);
+    });
+});
+
 app.post('/api/login', (req, res) => {
     const { email, password } = req.body;
     const sql = "SELECT id, nombre, rol FROM usuarios WHERE email = ? AND password = ?";
@@ -44,12 +54,5 @@ app.post('/api/login', (req, res) => {
     });
 });
 
-app.get('/api/productos', (req, res) => {
-    db.query('SELECT * FROM productos', (err, result) => {
-        if (err) return res.status(500).json(err);
-        res.json(result);
-    });
-});
-
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`🚀 Dulce Mundo en vivo puerto ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Dulce Mundo activo en puerto ${PORT}`));
