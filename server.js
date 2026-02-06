@@ -54,4 +54,7 @@ app.post('/api/login', (req, res) => {
 
 // USAMOS EL PUERTO DINÁMICO DE RAILWAY
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`🚀 Servidor en puerto ${PORT}`));
+// Agregamos '0.0.0.0' para que Railway pueda "ver" tu servidor desde afuera
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Servidor de Dulce Mundo despertó en el puerto ${PORT}`);
+});
