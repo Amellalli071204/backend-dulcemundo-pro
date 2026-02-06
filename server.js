@@ -1,24 +1,30 @@
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
-require('dotenv').config(); // Vital para leer el archivo .env
+require('dotenv').config();
 
 const app = express();
 
-// --- CONFIGURACIÓN DE CORS ---
+// --- CONFIGURACIÓN DE CORS PROFESIONAL ---
+// Esto permite que Vercel hable con Railway sin bloqueos
 app.use(cors({
-    origin: '*', // Permite peticiones desde Vercel
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Agregamos OPTIONS
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'], // Cabeceras que Axios necesita
+    origin: '*', 
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
     credentials: true
 }));
 
-// Importante: Responde a las peticiones 'OPTIONS' (preflight) inmediatamente
-app.options('(.*)', cors());
+// SOLUCIÓN AL CRASH: Manejo de peticiones preflight compatible
+app.options('*', (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+    res.sendStatus(200);
+});
 
 app.use(express.json());
 
-// --- CONEXIÓN A LA BASE DE DATOS USANDO VARIABLES ---
+// --- CONEXIÓN A LA BASE DE DATOS (Variables de Railway) ---
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -32,17 +38,21 @@ db.connect((err) => {
         console.error('❌ Error de conexión:', err.message);
         return;
     }
-    console.log('✅ Conexión segura establecida con la base de datos');
+    console.log('✅ Conexión segura establecida con la base de datos Caboose');
 });
 
-// --- TUS ENDPOINTS ---
+// --- RUTAS (ENDPOINTS) ---
+
 app.post('/api/login', (req, res) => {
     const { email, password } = req.body;
     const sql = "SELECT id, nombre, rol FROM usuarios WHERE email = ? AND password = ?";
     db.query(sql, [email, password], (err, result) => {
         if (err) return res.status(500).json(err);
-        if (result.length > 0) res.json({ success: true, user: result[0] });
-        else res.status(401).json({ success: false, message: "Credenciales incorrectas" });
+        if (result.length > 0) {
+            res.json({ success: true, user: result[0] });
+        } else {
+            res.status(401).json({ success: false, message: "Credenciales incorrectas" });
+        }
     });
 });
 
