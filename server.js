@@ -4,37 +4,42 @@ const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
-
-// --- CONFIGURACIÓN DE CORS DEFINITIVA ---
-// Esto elimina el error de "blocked by CORS policy" que se ve en tu video
-app.use(cors({
-    origin: '*', 
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-    credentials: true
-}));
-
+app.use(cors());
 app.use(express.json());
 
-// --- CONEXIÓN A LA BASE DE DATOS (CABOOSE) ---
-// Usamos las variables que ya tienes en Railway
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    port: process.env.DB_PORT || 16352 
+    port: process.env.DB_PORT || 16352
 });
 
-db.connect((err) => {
-    if (err) {
-        console.error('❌ Error de conexión:', err.message);
-        return;
-    }
-    console.log('✅ Conexión exitosa a la base de datos');
+// ✅ REAL: Endpoint de Registro (Ya no marcará 404)
+app.post('/api/registro', (req, res) => {
+    const { nombre, email, password } = req.body;
+    const sql = "INSERT INTO usuarios (nombre, email, password, rol) VALUES (?, ?, ?, 'cliente')";
+    db.query(sql, [nombre, email, password], (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, message: "Usuario registrado con éxito" });
+    });
 });
 
-// --- ENDPOINTS ---
+// ✅ REAL: Login que SI devuelve al usuario para guardarlo en el Front
+app.post('/api/login', (req, res) => {
+    const { email, password } = req.body;
+    const sql = "SELECT id, nombre, rol FROM usuarios WHERE email = ? AND password = ?";
+    db.query(sql, [email, password], (err, result) => {
+        if (err) return res.status(500).json(err);
+        if (result.length > 0) {
+            // Mandamos los datos para que el Front los guarde en localStorage
+            res.json({ success: true, user: result[0] }); 
+        } else {
+            res.status(401).json({ success: false, message: "Credenciales incorrectas" });
+        }
+    });
+});
+
 app.get('/api/productos', (req, res) => {
     db.query('SELECT * FROM productos', (err, result) => {
         if (err) return res.status(500).json(err);
@@ -42,19 +47,7 @@ app.get('/api/productos', (req, res) => {
     });
 });
 
-app.post('/api/login', (req, res) => {
-    const { email, password } = req.body;
-    const sql = "SELECT id, nombre, rol FROM usuarios WHERE email = ? AND password = ?";
-    db.query(sql, [email, password], (err, result) => {
-        if (err) return res.status(500).json(err);
-        if (result.length > 0) res.json({ success: true, user: result[0] });
-        else res.status(401).json({ success: false, message: "Credenciales incorrectas" });
-    });
-});
-
-// USAMOS EL PUERTO DINÁMICO DE RAILWAY
 const PORT = process.env.PORT || 4000;
-// Agregamos '0.0.0.0' para que Railway pueda "ver" tu servidor desde afuera
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`✅ Servidor de Dulce Mundo despertó en el puerto ${PORT}`);
+    console.log(`✅ Dulce Mundo API en puerto ${PORT}`);
 });
