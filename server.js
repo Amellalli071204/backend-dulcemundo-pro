@@ -7,36 +7,34 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// CONFIGURACIÓN DE CONEXIÓN CON SSL
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    port: process.env.DB_PORT || 16352
+    port: process.env.DB_PORT || 16352,
+    ssl: {
+        rejectUnauthorized: false // REQUERIDO PARA RAILWAY
+    }
 });
 
-// ✅ REAL: Endpoint de Registro (Ya no marcará 404)
-app.post('/api/registro', (req, res) => {
-    const { nombre, email, password } = req.body;
-    const sql = "INSERT INTO usuarios (nombre, email, password, rol) VALUES (?, ?, ?, 'cliente')";
-    db.query(sql, [nombre, email, password], (err, result) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true, message: "Usuario registrado con éxito" });
-    });
+db.connect((err) => {
+    if (err) {
+        console.error('❌ Error de conexión a la BD:', err.message);
+        return;
+    }
+    console.log('✅ Conexión segura establecida con MySQL en Railway');
 });
 
-// ✅ REAL: Login que SI devuelve al usuario para guardarlo en el Front
+// ENDPOINTS
 app.post('/api/login', (req, res) => {
     const { email, password } = req.body;
     const sql = "SELECT id, nombre, rol FROM usuarios WHERE email = ? AND password = ?";
     db.query(sql, [email, password], (err, result) => {
         if (err) return res.status(500).json(err);
-        if (result.length > 0) {
-            // Mandamos los datos para que el Front los guarde en localStorage
-            res.json({ success: true, user: result[0] }); 
-        } else {
-            res.status(401).json({ success: false, message: "Credenciales incorrectas" });
-        }
+        if (result.length > 0) res.json({ success: true, user: result[0] });
+        else res.status(401).json({ success: false, message: "Credenciales incorrectas" });
     });
 });
 
@@ -47,7 +45,8 @@ app.get('/api/productos', (req, res) => {
     });
 });
 
+// PUERTO DINÁMICO PARA RAILWAY
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`✅ Dulce Mundo API en puerto ${PORT}`);
+    console.log(`🚀 Dulce Mundo API lista en el puerto ${PORT}`);
 });
